@@ -1,0 +1,304 @@
+---
+/**
+ * Buscador de zonas con un combobox propio (ARIA "combobox" + "listbox").
+ * Sustituye al <datalist> nativo, cuyo desplegable no se puede estilizar.
+ */
+import Input from '@shared/ui/atoms/Input.astro';
+import Button from '@shared/ui/atoms/Button.astro';
+import { ZONES, zoneSearchLabel } from '../../domain/zone-catalog';
+import { formatOffset, getOffsetMinutes } from '../../domain/time';
+
+const now = new Date();
+const normalize = (s: string) =>
+	s
+		.normalize('NFD')
+		.replace(/[̀-ͯ]/g, '')
+		.toLowerCase();
+const options = [...ZONES]
+	.sort((a, b) => a.city.localeCompare(b.city, 'es'))
+	.map((z) => ({
+		zone: z,
+		label: zoneSearchLabel(z),
+		offset: formatOffset(getOffsetMinutes(z.timeZone, now)),
+		search: normalize(`${z.city} ${z.country} ${z.timeZone}`),
+	}));
+---
+
+<form class="add-zone" data-add-zone-form novalidate>
+	<label for="add-zone-input" class="add-zone__label">Añadir una zona</label>
+	<div class="add-zone__row">
+		<div class="add-zone__combo">
+			<Input
+				id="add-zone-input"
+				name="zone"
+				role="combobox"
+				aria-autocomplete="list"
+				aria-expanded="false"
+				aria-controls="zone-listbox"
+				placeholder="Busca una ciudad: Tokio, Lima, Madrid…"
+				autocomplete="off"
+				spellcheck="false"
+				required
+				data-zone-combobox
+			/>
+			<ul id="zone-listbox" class="add-zone__list" role="listbox" aria-label="Zonas disponibles" hidden data-zone-listbox>
+				{
+					options.map((o) => (
+						<li
+							id={`zone-option-${o.zone.slug}`}
+							class="add-zone__option"
+							role="option"
+							aria-selected="false"
+							data-zone-option
+							data-slug={o.zone.slug}
+							data-label={o.label}
+							data-search={o.search}
+						>
+							<span class="add-zone__option-name">
+								<strong>{o.zone.city}</strong>
+								<small>{o.zone.country}</small>
+							</span>
+							<span class="add-zone__option-meta">
+								<span class="add-zone__option-tz">{o.zone.timeZone}</span>
+								<span class="add-zone__option-offset">{o.offset}</span>
+							</span>
+						</li>
+					))
+				}
+				<li class="add-zone__empty" role="presentation" hidden data-zone-empty>Sin resultados</li>
+			</ul>
+		</div>
+		<Button type="submit" variant="accent">+ Añadir</Button>
+	</div>
+	<p class="add-zone__msg" data-add-zone-msg role="status" aria-live="polite"></p>
+</form>
+
+<script>
+	const normalize = (s: string) =>
+		s
+			.normalize('NFD')
+			.replace(/[̀-ͯ]/g, '')
+			.toLowerCase()
+			.trim();
+
+	document.querySelectorAll<HTMLFormElement>('[data-add-zone-form]').forEach((form) => {
+		const input = form.querySelector<HTMLInputElement>('[data-zone-combobox]')!;
+		const list = form.querySelector<HTMLUListElement>('[data-zone-listbox]')!;
+		const empty = form.querySelector<HTMLElement>('[data-zone-empty]')!;
+		const options = [...list.querySelectorAll<HTMLLIElement>('[data-zone-option]')];
+		let active = -1;
+
+		const visible = () => options.filter((o) => !o.hidden);
+
+		function setActive(index: number) {
+			const items = visible();
+			options.forEach((o) => o.setAttribute('aria-selected', 'false'));
+			active = items.length ? (index + items.length) % items.length : -1;
+			const current = items[active];
+			if (current) {
+				current.setAttribute('aria-selected', 'true');
+				input.setAttribute('aria-activedescendant', current.id);
+				current.scrollIntoView({ block: 'nearest' });
+			} else {
+				input.removeAttribute('aria-activedescendant');
+			}
+		}
+
+		function open() {
+			list.hidden = false;
+			input.setAttribute('aria-expanded', 'true');
+		}
+
+		function close() {
+			list.hidden = true;
+			input.setAttribute('aria-expanded', 'false');
+			input.removeAttribute('aria-activedescendant');
+			active = -1;
+		}
+
+		function filter() {
+			const query = normalize(input.value);
+			let count = 0;
+			for (const o of options) {
+				const match = !query || o.dataset.search!.includes(query);
+				o.hidden = !match;
+				if (match) count++;
+			}
+			empty.hidden = count > 0;
+			setActive(query ? 0 : -1);
+		}
+
+		function choose(option: HTMLLIElement) {
+			input.value = option.dataset.label!;
+			close();
+			form.requestSubmit();
+		}
+
+		input.addEventListener('input', () => {
+			filter();
+			open();
+		});
+		input.addEventListener('focus', () => {
+			filter();
+			open();
+		});
+		input.addEventListener('keydown', (event) => {
+			const items = visible();
+			switch (event.key) {
+				case 'ArrowDown':
+					event.preventDefault();
+					open();
+					setActive(active + 1);
+					break;
+				case 'ArrowUp':
+					event.preventDefault();
+					open();
+					setActive(active - 1);
+					break;
+				case 'Enter':
+					if (!list.hidden && items[active]) {
+						event.preventDefault();
+						choose(items[active]);
+					}
+					break;
+				case 'Escape':
+					close();
+					break;
+			}
+		});
+		// mousedown (no click) para elegir antes de que el input pierda el foco
+		list.addEventListener('mousedown', (event) => {
+			const option = (event.target as HTMLElement).closest<HTMLLIElement>('[data-zone-option]');
+			if (!option) return;
+			event.preventDefault();
+			choose(option);
+		});
+		list.addEventListener('mousemove', (event) => {
+			const option = (event.target as HTMLElement).closest<HTMLLIElement>('[data-zone-option]');
+			if (option) setActive(visible().indexOf(option));
+		});
+		input.addEventListener('blur', close);
+	});
+</script>
+
+<style>
+	.add-zone {
+		display: grid;
+		gap: var(--space-2);
+	}
+	.add-zone__label {
+		font-weight: 700;
+	}
+	.add-zone__row {
+		display: flex;
+		gap: var(--space-2);
+	}
+	.add-zone__combo {
+		position: relative;
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* Desplegable neobrutalista */
+	.add-zone__list {
+		position: absolute;
+		z-index: 20;
+		top: calc(100% + var(--space-2));
+		left: 0;
+		right: 0;
+		max-height: min(22rem, 55vh);
+		margin: 0;
+		padding: var(--space-2);
+		overflow-y: auto;
+		list-style: none;
+		background: var(--color-surface);
+		border: var(--border);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow);
+		scrollbar-color: var(--color-ink) var(--moss-100);
+	}
+	.add-zone__list[hidden] {
+		display: none;
+	}
+	.add-zone__option {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		cursor: pointer;
+		border: 2px solid transparent;
+		border-radius: var(--radius-sm);
+	}
+	.add-zone__option[hidden] {
+		display: none;
+	}
+	.add-zone__option[aria-selected='true'] {
+		background: var(--color-highlight);
+		border-color: var(--color-ink);
+		box-shadow: var(--shadow-sm);
+	}
+	.add-zone__option-name {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+	.add-zone__option-name small {
+		font-size: var(--fs-sm);
+		color: var(--color-ink-soft);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.add-zone__option-meta {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		flex: none;
+	}
+	.add-zone__option-tz {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		color: var(--color-ink-soft);
+	}
+	.add-zone__option-offset {
+		padding: 0.05rem 0.45rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 700;
+		background: var(--mist-200);
+		border: 2px solid var(--color-ink);
+		border-radius: 999px;
+	}
+	.add-zone__empty {
+		padding: var(--space-2) var(--space-3);
+		font-style: italic;
+		color: var(--color-ink-soft);
+	}
+	.add-zone__empty[hidden] {
+		display: none;
+	}
+
+	.add-zone__msg:empty {
+		display: none;
+	}
+	.add-zone__msg {
+		font-size: var(--fs-sm);
+		font-weight: 700;
+	}
+	.add-zone__msg[data-tone='error'] {
+		color: var(--clay-700);
+	}
+
+	@media (max-width: 640px) {
+		.add-zone__option-tz {
+			display: none;
+		}
+	}
+	@media (max-width: 480px) {
+		.add-zone__row {
+			flex-direction: column;
+		}
+	}
+</style>

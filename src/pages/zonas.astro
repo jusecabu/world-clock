@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@shared/ui/templates/BaseLayout.astro';
+import Breadcrumbs from '@shared/ui/molecules/Breadcrumbs.astro';
+import SectionTitle from '@shared/ui/molecules/SectionTitle.astro';
+import ZoneDirectory from '@world-clock/ui/organisms/ZoneDirectory.astro';
+import { ZONES, zonesByRegion } from '@world-clock/domain/zone-catalog';
+import { breadcrumbSchema } from '@seo/domain/structured-data';
+
+const now = new Date();
+const groups = [...zonesByRegion()].map(([title, zones]) => ({ title, zones }));
+const site = Astro.site ?? new URL(Astro.url.origin);
+
+// La hora cambia cada minuto, pero el listado es igual para todos: se puede cachear un poco.
+Astro.response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=60');
+---
+
+<BaseLayout
+	title="Hora actual en el mundo: todas las zonas horarias"
+	description={`Hora exacta ahora mismo en ${ZONES.length} ciudades de América, Europa, África, Asia y Oceanía. Elige una ciudad para ver su zona horaria, diferencia horaria y el clima.`}
+	canonicalPath="/zonas"
+	keywords={['hora mundial', 'horas del mundo', 'qué hora es en']}
+	jsonLd={[
+		breadcrumbSchema([
+			{ name: 'Inicio', url: new URL('/', site) },
+			{ name: 'Zonas', url: new URL('/zonas', site) },
+		]),
+	]}
+>
+	<div class="container zones-page">
+		<Breadcrumbs items={[{ name: 'Inicio', href: '/' }, { name: 'Zonas' }]} />
+		<SectionTitle
+			level={1}
+			eyebrow={`${ZONES.length} ciudades`}
+			title="La hora en todo el mundo"
+			description="El color de cada ciudad indica el momento del día allí: niebla para la madrugada, liquen para la mañana, arcilla para la tarde y salvia para la noche."
+		/>
+		<ZoneDirectory groups={groups} now={now} />
+	</div>
+</BaseLayout>
+
+<style>
+	.zones-page {
+		display: grid;
+		gap: var(--space-5);
+		padding-top: var(--space-5);
+	}
+</style>

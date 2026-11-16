@@ -1,0 +1,10 @@
+{
+	"name": "Raíz Horaria — Reloj mundial y clima",
+	"short_name": "Raíz Horaria",
+	"lang": "es",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#f4f0dc",
+	"theme_color": "#f4f0dc",
+	"icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

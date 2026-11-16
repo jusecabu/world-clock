@@ -1,0 +1,36 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Level = 1 | 2 | 3 | 4;
+type Size = 'md' | 'lg' | 'xl' | '2xl' | 'display';
+type Props = { level?: Level; size?: Size; class?: string } & Omit<HTMLAttributes<'h2'>, 'class'>;
+
+const { level = 2, size = 'xl', class: className, ...rest } = Astro.props;
+const Tag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4';
+---
+
+<Tag class:list={['heading', `heading--${size}`, className]} {...rest}><slot /></Tag>
+
+<style>
+	.heading {
+		font-weight: 700;
+		line-height: 1.05;
+		letter-spacing: -0.02em;
+		text-wrap: balance;
+	}
+	.heading--md {
+		font-size: var(--fs-lg);
+	}
+	.heading--lg {
+		font-size: var(--fs-xl);
+	}
+	.heading--xl {
+		font-size: var(--fs-2xl);
+	}
+	.heading--2xl {
+		font-size: clamp(2.6rem, 1.6rem + 4vw, 4.4rem);
+	}
+	.heading--display {
+		font-size: var(--fs-display);
+	}
+</style>

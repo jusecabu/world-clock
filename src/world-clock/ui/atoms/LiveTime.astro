@@ -1,0 +1,50 @@
+---
+import { formatClock, type ClockFormat } from '../../domain/clock-format';
+
+type Props = {
+	timeZone: string;
+	format?: ClockFormat;
+	now?: Date;
+	/** Zona del visitante (si el servidor la conoce por cookie), para el formato "diff". */
+	localTimeZone?: string;
+	/** Usa "local" para que el navegador ponga su propia zona. */
+	clientTimeZone?: string;
+	size?: 'sm' | 'md' | 'lg' | 'display';
+	class?: string;
+};
+
+const { timeZone, format = 'time', now = new Date(), localTimeZone, clientTimeZone, size = 'md', class: className } = Astro.props;
+const text = formatClock(format, timeZone, now, localTimeZone);
+const isTime = format === 'time' || format === 'time-short';
+---
+
+<time
+	class:list={['live', `live--${size}`, { 'live--digits': isTime }, className]}
+	data-clock={format}
+	data-tz={clientTimeZone ?? timeZone}
+	datetime={now.toISOString()}>{text}</time
+>
+
+<style>
+	.live {
+		font-variant-numeric: tabular-nums;
+	}
+	.live--digits {
+		font-family: var(--font-mono);
+		font-weight: 700;
+		letter-spacing: -0.04em;
+		line-height: 1;
+	}
+	.live--sm {
+		font-size: var(--fs-sm);
+	}
+	.live--md {
+		font-size: var(--fs-md);
+	}
+	.live--lg {
+		font-size: var(--fs-2xl);
+	}
+	.live--display {
+		font-size: var(--fs-display);
+	}
+</style>

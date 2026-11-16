@@ -1,0 +1,33 @@
+---
+import { SITE } from '@seo/domain/site';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+	<div class="container site-footer__inner">
+		<p><strong>{SITE.name}</strong> · {SITE.tagline} · {year}</p>
+		<p>
+			Datos del clima por <a href="https://open-meteo.com/" rel="noopener" target="_blank">Open-Meteo</a> (CC BY 4.0). Las horas se calculan con la
+			base de datos de zonas horarias IANA.
+		</p>
+	</div>
+</footer>
+
+<style>
+	.site-footer {
+		margin-top: var(--space-8);
+		padding-block: var(--space-5);
+		background: var(--ink-900);
+		color: var(--moss-100);
+		border-top: var(--border);
+		font-size: var(--fs-sm);
+	}
+	.site-footer__inner {
+		display: grid;
+		gap: var(--space-2);
+	}
+	.site-footer a {
+		color: var(--lichen-300);
+		font-weight: 700;
+	}
+</style>

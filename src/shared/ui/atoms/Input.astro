@@ -1,0 +1,28 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = { class?: string } & Omit<HTMLAttributes<'input'>, 'class'>;
+const { class: className, ...rest } = Astro.props;
+---
+
+<input class:list={['input', className]} {...rest} />
+
+<style>
+	.input {
+		width: 100%;
+		min-width: 0;
+		padding: var(--space-2) var(--space-3);
+		background: var(--color-surface);
+		border: var(--border);
+		border-radius: var(--radius-sm);
+		box-shadow: inset 3px 3px 0 0 hsl(var(--h-ink) var(--s-ink) 11% / 0.12);
+	}
+	.input::placeholder {
+		color: var(--color-ink-soft);
+		opacity: 0.8;
+	}
+	.input:focus-visible {
+		outline-offset: 2px;
+		background: var(--lichen-50);
+	}
+</style>

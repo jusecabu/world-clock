@@ -1,0 +1,64 @@
+---
+import LiveTime from '../atoms/LiveTime.astro';
+import type { Zone } from '../../domain/zone';
+import { getClockParts, getDayPeriod } from '../../domain/time';
+
+type Props = { zone: Zone; now: Date };
+const { zone, now } = Astro.props;
+const period = getDayPeriod(getClockParts(zone.timeZone, now).h);
+---
+
+<li class="zone-link" data-period={period} data-period-tz={zone.timeZone}>
+	<a href={`/zona/${zone.slug}`} title={`Hora actual en ${zone.city}, ${zone.country}`}>
+		<span class="zone-link__name">
+			<strong>{zone.city}</strong>
+			<small>{zone.country}</small>
+		</span>
+		<LiveTime timeZone={zone.timeZone} format="time-short" now={now} size="md" />
+	</a>
+</li>
+
+<style>
+	/* El <li> se estira a la altura de la fila y el enlace lo rellena: todas las tarjetas miden igual */
+	.zone-link {
+		display: flex;
+		min-width: 0;
+	}
+	.zone-link a {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		text-decoration: none;
+		background: var(--card-bg, var(--color-surface));
+		border: 2px solid var(--color-ink);
+		border-radius: var(--radius-sm);
+		transition:
+			transform 120ms ease,
+			box-shadow 120ms ease;
+	}
+	.zone-link a:hover,
+	.zone-link a:focus-visible {
+		transform: translate(-2px, -2px);
+		box-shadow: var(--shadow-sm);
+	}
+	.zone-link__name {
+		display: grid;
+		line-height: 1.15;
+		min-width: 0;
+	}
+	/* Nombres largos ("Ciudad de México", "Emiratos Árabes Unidos") en una línea con "…"; el nombre completo va en el title */
+	.zone-link__name strong,
+	.zone-link__name small {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.zone-link__name small {
+		font-size: var(--fs-xs);
+		color: var(--color-ink-soft);
+	}
+</style>

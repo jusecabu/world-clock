@@ -1,0 +1,57 @@
+---
+import '../../styles/global.css';
+import { Font } from 'astro:assets';
+import SeoHead, { type SeoProps } from '@seo/ui/SeoHead.astro';
+import SiteHeader from '../organisms/SiteHeader.astro';
+import SiteFooter from '../organisms/SiteFooter.astro';
+import ClockRuntime from '@world-clock/ui/ClockRuntime.astro';
+import { SITE } from '@seo/domain/site';
+
+type Props = SeoProps;
+const seo = Astro.props;
+---
+
+<!doctype html>
+<html lang={SITE.lang}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="theme-color" content={SITE.themeColor} />
+		<meta name="generator" content={Astro.generator} />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<link rel="sitemap" href="/sitemap-index.xml" />
+
+		<!-- Fuentes servidas por Astro (Fonts API); se precargan solo las más usadas -->
+		<Font cssVariable="--font-space-grotesk" preload={[{ weight: 400 }, { weight: 700 }]} />
+		<Font cssVariable="--font-space-mono" preload={[{ weight: 700 }]} />
+
+		<SeoHead {...seo} />
+		<slot name="head" />
+	</head>
+	<body>
+		<a href="#contenido" class="skip-link">Saltar al contenido</a>
+		<SiteHeader />
+		<main id="contenido">
+			<slot />
+		</main>
+		<SiteFooter />
+		<ClockRuntime />
+	</body>
+</html>
+
+<style>
+	.skip-link {
+		position: absolute;
+		left: var(--space-4);
+		top: -100px;
+		z-index: 10;
+		padding: var(--space-2) var(--space-4);
+		background: var(--color-highlight);
+		border: var(--border);
+		font-weight: 700;
+	}
+	.skip-link:focus {
+		top: var(--space-4);
+	}
+</style>

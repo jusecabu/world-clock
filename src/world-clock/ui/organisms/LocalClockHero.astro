@@ -1,0 +1,156 @@
+---
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Badge from '@shared/ui/atoms/Badge.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import StatItem from '@shared/ui/molecules/StatItem.astro';
+import LiveTime from '../atoms/LiveTime.astro';
+import AnalogClock from '../atoms/AnalogClock.astro';
+import WeatherSummary from '@weather/ui/molecules/WeatherSummary.astro';
+import type { LocalPlace } from '../../infrastructure/local-place';
+import type { WeatherReport } from '@weather/domain/weather';
+import { formatTemperature } from '@weather/domain/weather';
+import { getClockParts, getDayPeriod } from '../../domain/time';
+
+type Props = { place: LocalPlace; weather: WeatherReport | null; now: Date };
+const { place, weather, now } = Astro.props;
+
+// Si aún no sabemos la zona del visitante, el navegador pinta la suya ("local") desde el primer segundo.
+const clientTz = place.known ? place.timeZone : 'local';
+const period = getDayPeriod(getClockParts(place.timeZone, now).h);
+const location = [place.city, place.country].filter(Boolean).join(', ');
+---
+
+<Surface
+	as="section"
+	tone="period"
+	shadow="lg"
+	class="hero"
+	data-local-hero
+	data-known={String(place.known)}
+	data-period={period}
+	data-period-tz={clientTz}
+	aria-labelledby="hora-local"
+>
+	<div class="hero__main">
+		<p class="hero__eyebrow">
+			<Badge tone="lichen">Tu hora local</Badge>
+			<Badge tone="surface"><LiveTime timeZone={place.timeZone} clientTimeZone={clientTz} format="period" now={now} size="sm" /></Badge>
+		</p>
+		<Heading level={1} size="md" id="hora-local" class="hero__title">
+			Hora actual {place.known && place.city ? `en ${place.city}` : 'donde estás'}
+		</Heading>
+		<LiveTime timeZone={place.timeZone} clientTimeZone={clientTz} format="time" now={now} size="display" class="hero__clock" />
+		<LiveTime timeZone={place.timeZone} clientTimeZone={clientTz} format="date" now={now} size="md" class="hero__date" />
+		<div class="hero__meta">
+			<Badge tone="surface"><LiveTime timeZone={place.timeZone} clientTimeZone={clientTz} format="offset" now={now} size="sm" /></Badge>
+			{place.known && <Badge tone="mist">{place.timeZone}</Badge>}
+			{place.zone && <a href={`/zona/${place.zone.slug}`} class="hero__link">Ver detalle de {place.zone.city} →</a>}
+		</div>
+	</div>
+
+	<div class="hero__side">
+		<AnalogClock timeZone={place.timeZone} clientTimeZone={clientTz} now={now} size={170} />
+		<div class="hero__weather">
+			{location && place.known && <p class="hero__place">📍 {location}</p>}
+			{
+				place.known ? (
+					<WeatherSummary current={weather?.current} />
+				) : (
+					<p class="hero__loading">Detectando tu zona…</p>
+				)
+			}
+			{
+				weather && (
+					<dl class="hero__stats">
+						<StatItem label="Sensación" value={formatTemperature(weather.current.apparentTemperature)} />
+						<StatItem label="Humedad" value={`${weather.current.humidity}%`} />
+					</dl>
+				)
+			}
+		</div>
+	</div>
+</Surface>
+
+<style>
+	.hero {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: var(--space-6);
+		padding: clamp(var(--space-4), 4vw, var(--space-7));
+		overflow: hidden;
+	}
+	.hero__main {
+		display: grid;
+		gap: var(--space-3);
+		align-content: center;
+		min-width: 0;
+	}
+	.hero__eyebrow,
+	.hero__meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.hero__title {
+		font-weight: 500;
+	}
+	.hero__clock {
+		overflow-wrap: anywhere;
+	}
+	.hero__date {
+		font-size: var(--fs-lg);
+		font-weight: 700;
+	}
+	.hero__link {
+		font-weight: 700;
+		font-size: var(--fs-sm);
+	}
+	.hero__side {
+		display: grid;
+		justify-items: center;
+		align-content: center;
+		gap: var(--space-4);
+	}
+	.hero__weather {
+		display: grid;
+		gap: var(--space-3);
+		width: 100%;
+		min-width: 15rem;
+		padding: var(--space-3);
+		background: var(--color-surface);
+		border: var(--border);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow-sm);
+	}
+	.hero__place {
+		font-size: var(--fs-sm);
+		font-weight: 700;
+	}
+	.hero__loading {
+		font-style: italic;
+		color: var(--color-ink-soft);
+	}
+	.hero__stats {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: var(--space-2);
+		margin: 0;
+	}
+	@media (max-width: 820px) {
+		.hero {
+			grid-template-columns: 1fr;
+		}
+		.hero__side {
+			grid-template-columns: auto 1fr;
+			justify-items: stretch;
+			align-items: center;
+		}
+	}
+	@media (max-width: 520px) {
+		.hero__side {
+			grid-template-columns: 1fr;
+			justify-items: center;
+		}
+	}
+</style>

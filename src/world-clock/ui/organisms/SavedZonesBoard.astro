@@ -1,0 +1,177 @@
+---
+import SectionTitle from '@shared/ui/molecules/SectionTitle.astro';
+import Surface from '@shared/ui/atoms/Surface.astro';
+import AddZoneForm from '../molecules/AddZoneForm.astro';
+import ZoneCard from './ZoneCard.astro';
+import { ZONES } from '../../domain/zone-catalog';
+
+// Las tarjetas llegan después como HTML parcial (sin <head>), así que renderizamos una
+// dentro de un <template> inerte: eso garantiza que Astro incluya su CSS en esta página.
+const styleAnchor = ZONES[0];
+---
+
+<section class="board" aria-labelledby="mis-zonas">
+	<SectionTitle
+		id="mis-zonas"
+		eyebrow="Guardadas en este navegador"
+		title="Mis zonas horarias"
+		description="Añade las ciudades que te importan. Se guardan en el almacenamiento local de tu navegador, así que siguen aquí la próxima vez."
+	/>
+
+	<Surface tone="moss" class="board__form">
+		<AddZoneForm />
+	</Surface>
+
+	<div class="board__grid" data-saved-zones-grid aria-live="polite" aria-busy="true">
+		{Array.from({ length: 3 }, () => <div class="board__skeleton" aria-hidden="true" />)}
+	</div>
+
+	<template data-empty-zones-template>
+		<Surface tone="surface" class="board__empty">
+			<p><strong>Aún no tienes zonas guardadas.</strong></p>
+			<p>Usa el buscador de arriba o explora <a href="/zonas">todas las zonas</a>.</p>
+		</Surface>
+	</template>
+	<template data-style-anchor>
+		<ZoneCard zone={styleAnchor} weather={null} now={new Date()} removable />
+	</template>
+</section>
+
+<script>
+	import { getSavedZones, addZone, removeZone, ZONES_CHANGE_EVENT } from '../../client/saved-zones-store';
+	import { refreshClocks } from '../../client/clock-ticker';
+
+	const grid = document.querySelector<HTMLElement>('[data-saved-zones-grid]');
+	const form = document.querySelector<HTMLFormElement>('[data-add-zone-form]');
+	const message = document.querySelector<HTMLElement>('[data-add-zone-msg]');
+	const emptyTemplate = document.querySelector<HTMLTemplateElement>('[data-empty-zones-template]');
+
+	let renderId = 0;
+
+	/** Pide al servidor las tarjetas ya renderizadas (con el clima) para las zonas guardadas. */
+	async function render(slugs: string[]) {
+		if (!grid) return;
+		const id = ++renderId;
+		if (slugs.length === 0) {
+			grid.replaceChildren(emptyTemplate!.content.cloneNode(true));
+			grid.setAttribute('aria-busy', 'false');
+			return;
+		}
+		grid.setAttribute('aria-busy', 'true');
+		try {
+			const res = await fetch(`/partials/zone-cards?zones=${encodeURIComponent(slugs.join(','))}`);
+			const html = await res.text();
+			if (id !== renderId) return; // llegó una respuesta más nueva
+			grid.innerHTML = html;
+			refreshClocks();
+		} catch {
+			grid.innerHTML = '<p>No se pudieron cargar tus zonas. Revisa tu conexión.</p>';
+		} finally {
+			if (id === renderId) grid.setAttribute('aria-busy', 'false');
+		}
+	}
+
+	function say(text: string, tone: 'ok' | 'error' = 'ok') {
+		if (!message) return;
+		message.textContent = text;
+		message.dataset.tone = tone;
+	}
+
+	form?.addEventListener('submit', (event) => {
+		event.preventDefault();
+		const input = form.querySelector<HTMLInputElement>('input[name="zone"]')!;
+		const normalize = (s: string) =>
+			s
+				.normalize('NFD')
+				.replace(/[̀-ͯ]/g, '')
+				.toLowerCase()
+				.trim();
+		const value = normalize(input.value);
+		if (!value) return say('Escribe el nombre de una ciudad.', 'error');
+
+		const options = [...form.querySelectorAll<HTMLElement>('[data-zone-option]')];
+		const label = (o: HTMLElement) => normalize(o.dataset.label!);
+		const match =
+			options.find((o) => label(o) === value) ??
+			options.find((o) => label(o).startsWith(value)) ??
+			options.find((o) => o.dataset.search!.includes(value));
+
+		if (!match?.dataset.slug) return say(`No encontramos “${input.value}”. Prueba con otra ciudad.`, 'error');
+		if (!addZone(match.dataset.slug)) return say(`${match.dataset.label} ya está en tus zonas.`, 'error');
+
+		say(`${match.dataset.label} añadida.`);
+		input.value = '';
+	});
+
+	grid?.addEventListener('click', (event) => {
+		const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-remove-zone]');
+		if (!button) return;
+		const slug = button.dataset.removeZone!;
+		// Quitamos la tarjeta al instante; el store emite el cambio para el resto.
+		button.closest('[data-zone-card]')?.remove();
+		removeZone(slug);
+		say('Zona eliminada.');
+	});
+
+	window.addEventListener(ZONES_CHANGE_EVENT, (event) => {
+		const slugs = (event as CustomEvent<string[]>).detail;
+		const rendered = [...grid!.querySelectorAll<HTMLElement>('[data-zone-card]')].map((el) => el.dataset.zoneCard);
+		// Si solo se eliminó una tarjeta (ya quitada del DOM), no hace falta volver a pedir nada.
+		if (slugs.length > 0 && slugs.length === rendered.length && slugs.every((s, i) => s === rendered[i])) return;
+		render(slugs);
+	});
+
+	render(getSavedZones());
+</script>
+
+<style>
+	.board {
+		display: grid;
+		gap: var(--space-5);
+	}
+	.board :global(.section-title) {
+		margin-bottom: 0;
+	}
+	.board__form {
+		position: relative;
+		z-index: 5; /* el desplegable del buscador queda por encima de las tarjetas */
+		padding: var(--space-4);
+	}
+	/* 3 columnas fijas; las tarjetas de una misma fila comparten altura */
+	.board__grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--space-5);
+		align-items: stretch;
+	}
+	@media (max-width: 960px) {
+		.board__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 620px) {
+		.board__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	.board__skeleton {
+		height: 15rem;
+		background: repeating-linear-gradient(-45deg, var(--moss-100), var(--moss-100) 12px, var(--moss-200) 12px, var(--moss-200) 24px);
+		border: var(--border);
+		border-radius: var(--radius);
+		opacity: 0.7;
+		animation: pulse 1.2s ease-in-out infinite alternate;
+	}
+	@keyframes pulse {
+		to {
+			opacity: 0.35;
+		}
+	}
+	.board__grid :global(.board__empty),
+	.board__empty {
+		grid-column: 1 / -1;
+		display: grid;
+		gap: var(--space-1);
+		padding: var(--space-5);
+	}
+</style>

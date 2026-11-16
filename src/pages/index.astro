@@ -1,11 +1,62 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import BaseLayout from '@shared/ui/templates/BaseLayout.astro';
+import SectionTitle from '@shared/ui/molecules/SectionTitle.astro';
+import LocalClockHero from '@world-clock/ui/organisms/LocalClockHero.astro';
+import SavedZonesBoard from '@world-clock/ui/organisms/SavedZonesBoard.astro';
+import ZoneDirectory from '@world-clock/ui/organisms/ZoneDirectory.astro';
+import Button from '@shared/ui/atoms/Button.astro';
+import { readLocalTimeZone, resolveLocalPlace } from '@world-clock/infrastructure/local-place';
+import { FEATURED_SLUGS, zonesBySlugs } from '@world-clock/domain/zone-catalog';
+import { getWeather } from '@weather/infrastructure/open-meteo';
+import { SITE } from '@seo/domain/site';
+import { webApplicationSchema, webSiteSchema } from '@seo/domain/structured-data';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// SSR: la hora local se renderiza en el servidor con la zona que el navegador guardó en una cookie.
+const now = new Date();
+const place = await resolveLocalPlace(readLocalTimeZone(Astro.cookies));
+const weather = place.known ? await getWeather(place) : null;
+const featured = zonesBySlugs(FEATURED_SLUGS);
+
+// El HTML depende de la cookie del visitante: no debe cachearse compartido.
+Astro.response.headers.set('Cache-Control', 'private, no-cache');
+Astro.response.headers.set('Vary', 'Cookie');
+
+const site = Astro.site ?? new URL(Astro.url.origin);
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<BaseLayout
+	title={`${SITE.name} — Hora local, reloj mundial y clima`}
+	description={SITE.description}
+	canonicalPath="/"
+	jsonLd={[webSiteSchema(site), webApplicationSchema(site)]}
+>
+	<div class="container page">
+		<LocalClockHero place={place} weather={weather} now={now} />
+
+		<SavedZonesBoard />
+
+		<section aria-labelledby="zonas-populares">
+			<SectionTitle
+				id="zonas-populares"
+				eyebrow="Ahora mismo en"
+				title="Zonas populares"
+				description="Entra a cualquier ciudad para ver su hora exacta, diferencia horaria contigo y el pronóstico del tiempo."
+			/>
+			<ZoneDirectory groups={[{ title: 'Populares', zones: featured }]} now={now} />
+			<div class="page__more">
+				<Button href="/zonas" variant="primary">Ver todas las zonas →</Button>
+			</div>
+		</section>
+	</div>
+</BaseLayout>
+
+<style>
+	.page {
+		display: grid;
+		gap: var(--space-8);
+		padding-top: var(--space-6);
+	}
+	.page__more {
+		margin-top: var(--space-5);
+	}
+</style>

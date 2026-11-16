@@ -1,0 +1,41 @@
+---
+import Badge from '@shared/ui/atoms/Badge.astro';
+import LiveTime from '../atoms/LiveTime.astro';
+
+type Props = {
+	timeZone: string;
+	now: Date;
+	localTimeZone?: string;
+	showDiff?: boolean;
+	showPeriod?: boolean;
+	extra?: string[];
+};
+const { timeZone, now, localTimeZone, showDiff = true, showPeriod = false, extra = [] } = Astro.props;
+---
+
+<div class="badges">
+	<Badge tone="surface"><LiveTime timeZone={timeZone} format="offset" now={now} size="sm" /></Badge>
+	{
+		showDiff && (
+			<Badge tone="lichen">
+				<LiveTime timeZone={timeZone} format="diff" now={now} localTimeZone={localTimeZone} size="sm" />
+			</Badge>
+		)
+	}
+	{
+		showPeriod && (
+			<Badge tone="fern">
+				<LiveTime timeZone={timeZone} format="period" now={now} size="sm" />
+			</Badge>
+		)
+	}
+	{extra.map((text) => <Badge tone="mist">{text}</Badge>)}
+</div>
+
+<style>
+	.badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+</style>

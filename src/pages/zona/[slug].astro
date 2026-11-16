@@ -1,0 +1,184 @@
+---
+import BaseLayout from '@shared/ui/templates/BaseLayout.astro';
+import Breadcrumbs from '@shared/ui/molecules/Breadcrumbs.astro';
+import SectionTitle from '@shared/ui/molecules/SectionTitle.astro';
+import StatItem from '@shared/ui/molecules/StatItem.astro';
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import ZoneDetailHero from '@world-clock/ui/organisms/ZoneDetailHero.astro';
+import ZoneDirectory from '@world-clock/ui/organisms/ZoneDirectory.astro';
+import CurrentWeatherPanel from '@weather/ui/organisms/CurrentWeatherPanel.astro';
+import HourlyStrip from '@weather/ui/organisms/HourlyStrip.astro';
+import ForecastWeek from '@weather/ui/organisms/ForecastWeek.astro';
+import { ZONES, findZoneBySlug } from '@world-clock/domain/zone-catalog';
+import {
+	formatOffset,
+	formatTime,
+	getOffsetMinutes,
+	isDaylightSaving,
+	localIsoHour,
+	observesDaylightSaving,
+	timeZoneLongName,
+} from '@world-clock/domain/time';
+import { readLocalTimeZone } from '@world-clock/infrastructure/local-place';
+import { getWeather, upcomingHours } from '@weather/infrastructure/open-meteo';
+import { describeWeather, formatTemperature } from '@weather/domain/weather';
+import { breadcrumbSchema, faqSchema, placeSchema } from '@seo/domain/structured-data';
+
+const zone = findZoneBySlug(Astro.params.slug);
+if (!zone) {
+	return Astro.rewrite('/404');
+}
+
+const now = new Date();
+const localTimeZone = readLocalTimeZone(Astro.cookies);
+const weather = await getWeather(zone);
+const hours = weather ? upcomingHours(weather, localIsoHour(zone.timeZone, now)) : [];
+
+const offset = formatOffset(getOffsetMinutes(zone.timeZone, now));
+const longName = timeZoneLongName(zone.timeZone, now);
+const observesDst = observesDaylightSaving(zone.timeZone, now);
+const inDst = isDaylightSaving(zone.timeZone, now);
+const today = weather?.daily[0];
+
+// Zonas relacionadas: mismo desfase horario ahora mismo o misma región.
+const currentOffset = getOffsetMinutes(zone.timeZone, now);
+const related = ZONES.filter((z) => z.slug !== zone.slug)
+	.map((z) => ({ z, score: (getOffsetMinutes(z.timeZone, now) === currentOffset ? 2 : 0) + (z.region === zone.region ? 1 : 0) }))
+	.filter((r) => r.score > 0)
+	.sort((a, b) => b.score - a.score || a.z.city.localeCompare(b.z.city, 'es'))
+	.slice(0, 8)
+	.map((r) => r.z);
+
+// SEO
+const site = Astro.site ?? new URL(Astro.url.origin);
+const pageUrl = new URL(`/zona/${zone.slug}`, site);
+const weatherText = weather ? `, ${formatTemperature(weather.current.temperature)}C y ${describeWeather(weather.current.weatherCode).label.toLowerCase()}` : '';
+const title = `Hora actual en ${zone.city}, ${zone.country} (${offset}) y clima`;
+const description = `¿Qué hora es en ${zone.city}? Hora exacta ahora en ${zone.city}, ${zone.country} (${zone.timeZone}, ${offset})${weatherText}. Diferencia horaria contigo, amanecer, atardecer y pronóstico de 7 días.`;
+
+const faq = [
+	{
+		question: `¿Qué hora es ahora en ${zone.city}?`,
+		answer: `En ${zone.city} son las ${formatTime(zone.timeZone, now, false)} (${longName}, ${offset}). Esta página se actualiza cada segundo.`,
+	},
+	{
+		question: `¿Qué zona horaria tiene ${zone.city}?`,
+		answer: `${zone.city} usa la zona horaria IANA ${zone.timeZone}, actualmente ${offset}.`,
+	},
+	{
+		question: `¿${zone.city} cambia de hora en verano?`,
+		answer: observesDst
+			? `Sí. ${zone.city} cambia de hora durante el año; ahora mismo está en ${inDst ? 'horario de verano' : 'horario estándar'}.`
+			: `No. ${zone.city} mantiene la misma hora todo el año, sin horario de verano.`,
+	},
+];
+
+Astro.response.headers.set('Cache-Control', 'private, no-cache');
+Astro.response.headers.set('Vary', 'Cookie');
+---
+
+<BaseLayout
+	title={title}
+	description={description}
+	canonicalPath={`/zona/${zone.slug}`}
+	keywords={[`hora en ${zone.city}`, `hora actual ${zone.city}`, `clima ${zone.city}`, `zona horaria ${zone.country}`, zone.timeZone]}
+	jsonLd={[
+		breadcrumbSchema([
+			{ name: 'Inicio', url: new URL('/', site) },
+			{ name: 'Zonas', url: new URL('/zonas', site) },
+			{ name: zone.city, url: pageUrl },
+		]),
+		placeSchema(zone, pageUrl),
+		faqSchema(faq),
+	]}
+>
+	<div class="container detail">
+		<Breadcrumbs items={[{ name: 'Inicio', href: '/' }, { name: 'Zonas', href: '/zonas' }, { name: zone.city }]} />
+
+		<ZoneDetailHero zone={zone} weather={weather} now={now} localTimeZone={localTimeZone} />
+
+		<section aria-labelledby="datos-zona">
+			<SectionTitle id="datos-zona" eyebrow="Ficha técnica" title={`Zona horaria de ${zone.city}`} />
+			<dl class="detail__facts">
+				<StatItem label="Zona IANA" value={zone.timeZone} />
+				<StatItem label="Nombre" value={longName} />
+				<StatItem label="Desfase UTC" value={offset} />
+				<StatItem
+					label="Horario de verano"
+					value={observesDst ? (inDst ? 'Sí, activo' : 'Sí, inactivo') : 'No aplica'}
+				/>
+				{today && <StatItem label="Amanecer" value={today.sunrise.slice(11, 16)} />}
+				{today && <StatItem label="Atardecer" value={today.sunset.slice(11, 16)} />}
+				<StatItem label="Coordenadas" value={`${zone.latitude.toFixed(2)}, ${zone.longitude.toFixed(2)}`} />
+				<StatItem label="País" value={`${zone.country} (${zone.countryCode})`} />
+			</dl>
+		</section>
+
+		<div class="detail__weather">
+			<CurrentWeatherPanel report={weather} city={zone.city} />
+			<HourlyStrip hours={hours} />
+		</div>
+
+		{weather && <ForecastWeek days={weather.daily} city={zone.city} />}
+
+		<section aria-labelledby="preguntas">
+			<SectionTitle id="preguntas" eyebrow="Preguntas frecuentes" title={`Sobre la hora en ${zone.city}`} />
+			<div class="detail__faq">
+				{
+					faq.map((item) => (
+						<Surface as="article" tone="surface" shadow="sm" class="detail__faq-item">
+							<Heading level={3} size="md">
+								{item.question}
+							</Heading>
+							<p>{item.answer}</p>
+						</Surface>
+					))
+				}
+			</div>
+		</section>
+
+		{
+			related.length > 0 && (
+				<section aria-labelledby="relacionadas">
+					<SectionTitle id="relacionadas" eyebrow="También te puede interesar" title="Zonas relacionadas" />
+					<ZoneDirectory groups={[{ title: 'Relacionadas', zones: related }]} now={now} />
+				</section>
+			)
+		}
+	</div>
+</BaseLayout>
+
+<style>
+	.detail {
+		display: grid;
+		gap: var(--space-7);
+		padding-top: var(--space-5);
+	}
+	.detail__facts {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.detail__weather {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+		gap: var(--space-5);
+		align-items: start;
+	}
+	.detail__faq {
+		display: grid;
+		gap: var(--space-4);
+	}
+	.detail__faq-item {
+		display: grid;
+		gap: var(--space-2);
+		padding: var(--space-4);
+	}
+	@media (max-width: 900px) {
+		.detail__weather {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

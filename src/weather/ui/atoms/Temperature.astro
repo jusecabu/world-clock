@@ -1,0 +1,39 @@
+---
+import { formatTemperature } from '../../domain/weather';
+
+type Props = { value: number; size?: 'sm' | 'md' | 'lg' | 'xl'; muted?: boolean };
+const { value, size = 'md', muted = false } = Astro.props;
+---
+
+<span class:list={['temp', `temp--${size}`, { 'temp--muted': muted }]} aria-label={`${Math.round(value)} grados Celsius`}>
+	{formatTemperature(value)}<span class="temp__unit" aria-hidden="true">C</span>
+</span>
+
+<style>
+	.temp {
+		font-family: var(--font-mono);
+		font-weight: 700;
+		line-height: 1;
+		letter-spacing: -0.04em;
+	}
+	.temp__unit {
+		font-size: 0.5em;
+		vertical-align: super;
+		margin-left: 0.05em;
+	}
+	.temp--sm {
+		font-size: var(--fs-sm);
+	}
+	.temp--md {
+		font-size: var(--fs-lg);
+	}
+	.temp--lg {
+		font-size: var(--fs-xl);
+	}
+	.temp--xl {
+		font-size: var(--fs-2xl);
+	}
+	.temp--muted {
+		color: var(--color-ink-soft);
+	}
+</style>

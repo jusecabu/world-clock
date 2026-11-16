@@ -1,0 +1,17 @@
+---
+/** Fragmento HTML (parcial) con el bloque de hora local, pedido por el navegador tras guardar su zona en la cookie. */
+import LocalClockHero from '@world-clock/ui/organisms/LocalClockHero.astro';
+import { readLocalTimeZone, resolveLocalPlace } from '@world-clock/infrastructure/local-place';
+import { getWeather } from '@weather/infrastructure/open-meteo';
+
+export const partial = true;
+
+const now = new Date();
+const place = await resolveLocalPlace(readLocalTimeZone(Astro.cookies));
+const weather = place.known ? await getWeather(place) : null;
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex');
+---
+
+<LocalClockHero place={place} weather={weather} now={now} />

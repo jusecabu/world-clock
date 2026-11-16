@@ -1,0 +1,56 @@
+---
+import Heading from '@shared/ui/atoms/Heading.astro';
+import ZoneLinkItem from '../molecules/ZoneLinkItem.astro';
+import type { Zone } from '../../domain/zone';
+
+type Group = { title: string; zones: Zone[] };
+type Props = { groups: Group[]; now: Date; headingLevel?: 2 | 3 };
+const { groups, now, headingLevel = 2 } = Astro.props;
+const slug = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+---
+
+<div class="directory">
+	{
+		groups.map((group) => (
+			<section class="directory__group" aria-labelledby={`region-${slug(group.title)}`}>
+				{groups.length > 1 && (
+					<Heading level={headingLevel} size="md" id={`region-${slug(group.title)}`} class="directory__title">
+						{group.title}
+					</Heading>
+				)}
+				<ul class="directory__list">
+					{group.zones.map((zone) => (
+						<ZoneLinkItem zone={zone} now={now} />
+					))}
+				</ul>
+			</section>
+		))
+	}
+</div>
+
+<style>
+	.directory {
+		display: grid;
+		gap: var(--space-6);
+	}
+	.directory__group {
+		display: grid;
+		gap: var(--space-3);
+	}
+	.directory__title {
+		display: inline-block;
+		justify-self: start;
+		padding: 0 var(--space-2);
+		background: var(--color-highlight);
+		border: 2px solid var(--color-ink);
+		box-shadow: var(--shadow-sm);
+	}
+	.directory__list {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+		gap: var(--space-3);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+</style>

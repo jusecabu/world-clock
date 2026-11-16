@@ -1,0 +1,46 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Tone = 'moss' | 'fern' | 'mist' | 'lichen' | 'clay' | 'bark' | 'surface';
+type Props = { tone?: Tone; class?: string } & Omit<HTMLAttributes<'span'>, 'class'>;
+
+const { tone = 'surface', class: className, ...rest } = Astro.props;
+---
+
+<span class:list={['badge', `badge--${tone}`, className]} {...rest}><slot /></span>
+
+<style>
+	.badge {
+		--badge-bg: var(--color-surface);
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-1);
+		padding: 0.15rem 0.55rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 700;
+		line-height: 1.4;
+		background: var(--badge-bg);
+		border: 2px solid var(--color-ink);
+		border-radius: 999px;
+		white-space: nowrap;
+	}
+	.badge--moss {
+		--badge-bg: var(--moss-200);
+	}
+	.badge--fern {
+		--badge-bg: var(--fern-200);
+	}
+	.badge--mist {
+		--badge-bg: var(--mist-200);
+	}
+	.badge--lichen {
+		--badge-bg: var(--lichen-300);
+	}
+	.badge--clay {
+		--badge-bg: var(--clay-200);
+	}
+	.badge--bark {
+		--badge-bg: var(--bark-200);
+	}
+</style>

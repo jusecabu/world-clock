@@ -1,0 +1,129 @@
+---
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import Button from '@shared/ui/atoms/Button.astro';
+import LiveTime from '../atoms/LiveTime.astro';
+import AnalogClock from '../atoms/AnalogClock.astro';
+import ZoneTimeBadges from '../molecules/ZoneTimeBadges.astro';
+import WeatherSummary from '@weather/ui/molecules/WeatherSummary.astro';
+import type { Zone } from '../../domain/zone';
+import type { WeatherReport } from '@weather/domain/weather';
+import { getClockParts, getDayPeriod, isDaylightSaving, observesDaylightSaving } from '../../domain/time';
+
+type Props = { zone: Zone; weather: WeatherReport | null; now: Date; localTimeZone?: string };
+const { zone, weather, now, localTimeZone } = Astro.props;
+const period = getDayPeriod(getClockParts(zone.timeZone, now).h);
+const dst = observesDaylightSaving(zone.timeZone, now) ? (isDaylightSaving(zone.timeZone, now) ? 'Horario de verano' : 'Horario estándar') : 'Sin cambio de hora';
+---
+
+<Surface
+	as="section"
+	tone="period"
+	shadow="lg"
+	class="detail-hero"
+	data-period={period}
+	data-period-tz={zone.timeZone}
+	aria-labelledby="titulo-zona"
+>
+	<div class="detail-hero__main">
+		<Heading level={1} size="xl" id="titulo-zona">
+			Hora actual en <span class="detail-hero__city">{zone.city}</span>
+		</Heading>
+		<p class="detail-hero__country">{zone.country} · {zone.region}</p>
+		<LiveTime timeZone={zone.timeZone} format="time" now={now} size="display" />
+		<LiveTime timeZone={zone.timeZone} format="date" now={now} size="md" class="detail-hero__date" />
+		<ZoneTimeBadges timeZone={zone.timeZone} now={now} localTimeZone={localTimeZone} showPeriod extra={[dst]} />
+		<div class="detail-hero__actions">
+			<Button variant="highlight" data-save-zone={zone.slug} aria-pressed="false">
+				<span data-save-label>☆ Guardar en mis zonas</span>
+			</Button>
+			<Button variant="ghost" href="/">← Volver a mi reloj</Button>
+		</div>
+	</div>
+	<div class="detail-hero__side">
+		<AnalogClock timeZone={zone.timeZone} now={now} size={200} />
+		<div class="detail-hero__weather">
+			<WeatherSummary current={weather?.current} size="lg" />
+		</div>
+	</div>
+</Surface>
+
+<script>
+	import { isZoneSaved, toggleZone } from '../../client/saved-zones-store';
+
+	document.querySelectorAll<HTMLButtonElement>('[data-save-zone]').forEach((button) => {
+		const slug = button.dataset.saveZone!;
+		const label = button.querySelector<HTMLElement>('[data-save-label]')!;
+		const paint = (saved: boolean) => {
+			button.setAttribute('aria-pressed', String(saved));
+			label.textContent = saved ? '★ Guardada en mis zonas' : '☆ Guardar en mis zonas';
+		};
+		paint(isZoneSaved(slug));
+		button.addEventListener('click', () => paint(toggleZone(slug)));
+	});
+</script>
+
+<style>
+	.detail-hero {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: var(--space-6);
+		padding: clamp(var(--space-4), 4vw, var(--space-7));
+	}
+	.detail-hero__main {
+		display: grid;
+		gap: var(--space-3);
+		align-content: center;
+		min-width: 0;
+	}
+	.detail-hero__city {
+		background: var(--color-surface);
+		padding: 0 0.2em;
+		border: var(--border);
+		box-shadow: var(--shadow-sm);
+		display: inline-block;
+		transform: rotate(-1deg);
+	}
+	.detail-hero__country {
+		font-weight: 700;
+	}
+	.detail-hero__date {
+		font-size: var(--fs-lg);
+		font-weight: 700;
+	}
+	.detail-hero__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin-top: var(--space-2);
+	}
+	.detail-hero__side {
+		display: grid;
+		justify-items: center;
+		align-content: center;
+		gap: var(--space-5);
+	}
+	.detail-hero__weather {
+		padding: var(--space-3) var(--space-4);
+		background: var(--color-surface);
+		border: var(--border);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow-sm);
+	}
+	@media (max-width: 820px) {
+		.detail-hero {
+			grid-template-columns: 1fr;
+		}
+		.detail-hero__side {
+			grid-template-columns: auto auto;
+			justify-content: start;
+			align-items: center;
+		}
+	}
+	@media (max-width: 520px) {
+		.detail-hero__side {
+			grid-template-columns: 1fr;
+			justify-items: center;
+		}
+	}
+</style>

@@ -1,0 +1,21 @@
+---
+/** Fragmento HTML (parcial) con las tarjetas de las zonas guardadas en localStorage: /partials/zone-cards?zones=madrid,tokio */
+import ZoneCard from '@world-clock/ui/organisms/ZoneCard.astro';
+import { zonesBySlugs } from '@world-clock/domain/zone-catalog';
+import { readLocalTimeZone } from '@world-clock/infrastructure/local-place';
+import { getWeather } from '@weather/infrastructure/open-meteo';
+
+export const partial = true;
+
+const MAX_ZONES = 24;
+const slugs = [...new Set((Astro.url.searchParams.get('zones') ?? '').split(',').map((s) => s.trim()))].slice(0, MAX_ZONES);
+const zones = zonesBySlugs(slugs);
+const now = new Date();
+const localTimeZone = readLocalTimeZone(Astro.cookies);
+const reports = await Promise.all(zones.map((z) => getWeather(z)));
+
+Astro.response.headers.set('Cache-Control', 'private, max-age=60');
+Astro.response.headers.set('X-Robots-Tag', 'noindex');
+---
+
+{zones.map((zone, i) => <ZoneCard zone={zone} weather={reports[i]} now={now} localTimeZone={localTimeZone} removable />)}

@@ -1,0 +1,96 @@
+---
+import WeatherIcon from '../atoms/WeatherIcon.astro';
+import Temperature from '../atoms/Temperature.astro';
+import { describeWeather, type DailyForecast } from '../../domain/weather';
+
+type Props = { day: DailyForecast; isToday?: boolean; rangeMin: number; rangeMax: number };
+const { day, isToday = false, rangeMin, rangeMax } = Astro.props;
+
+// La fecha viene en la zona del lugar ("2026-11-16"); la anclamos a mediodía UTC para no cambiar de día.
+const date = new Date(`${day.date}T12:00:00Z`);
+const weekday = isToday ? 'Hoy' : new Intl.DateTimeFormat('es', { weekday: 'short', timeZone: 'UTC' }).format(date);
+const dayMonth = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
+const span = Math.max(rangeMax - rangeMin, 1);
+const left = ((day.min - rangeMin) / span) * 100;
+const width = ((day.max - day.min) / span) * 100;
+---
+
+<li class:list={['day', { 'day--today': isToday }]}>
+	<span class="day__name">
+		<strong>{weekday}</strong>
+		<small>{dayMonth}</small>
+	</span>
+	<WeatherIcon code={day.weatherCode} size={36} />
+	<span class="day__label">{describeWeather(day.weatherCode).label}</span>
+	<span class="day__rain" title="Probabilidad de lluvia">{day.precipitationProbability != null ? `${day.precipitationProbability}%` : '—'}</span>
+	<span class="day__range">
+		<Temperature value={day.min} size="sm" muted />
+		<span class="day__bar" aria-hidden="true"><span style={`left:${left}%;width:${Math.max(width, 4)}%`}></span></span>
+		<Temperature value={day.max} size="sm" />
+	</span>
+</li>
+
+<style>
+	.day {
+		display: grid;
+		grid-template-columns: 4.5rem 36px 1fr 3rem minmax(9rem, 14rem);
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border-bottom: 2px dashed hsl(var(--h-ink) var(--s-ink) 11% / 0.25);
+	}
+	.day:last-child {
+		border-bottom: 0;
+	}
+	.day--today {
+		background: var(--lichen-100);
+	}
+	.day__name {
+		display: grid;
+		line-height: 1.1;
+		text-transform: capitalize;
+	}
+	.day__name small {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		color: var(--color-ink-soft);
+	}
+	.day__label {
+		font-size: var(--fs-sm);
+	}
+	.day__rain {
+		font-family: var(--font-mono);
+		font-size: var(--fs-sm);
+		color: var(--mist-700);
+		font-weight: 700;
+	}
+	.day__range {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.day__bar {
+		position: relative;
+		flex: 1;
+		height: 10px;
+		background: var(--moss-100);
+		border: 2px solid var(--color-ink);
+		border-radius: 999px;
+		overflow: hidden;
+	}
+	.day__bar span {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		background: linear-gradient(90deg, var(--mist-300), var(--lichen-300), var(--clay-300));
+	}
+	@media (max-width: 640px) {
+		.day {
+			grid-template-columns: 3.6rem 32px 1fr;
+		}
+		.day__label,
+		.day__rain {
+			display: none;
+		}
+	}
+</style>

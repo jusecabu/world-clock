@@ -1,0 +1,43 @@
+---
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import StatItem from '@shared/ui/molecules/StatItem.astro';
+import WeatherSummary from '../molecules/WeatherSummary.astro';
+import { formatTemperature, type WeatherReport } from '../../domain/weather';
+
+type Props = { report: WeatherReport | null; city: string };
+const { report, city } = Astro.props;
+const today = report?.daily[0];
+const time = (iso?: string) => iso?.slice(11, 16) ?? '—';
+---
+
+<Surface as="section" tone="mist" class="panel" aria-labelledby="clima-actual">
+	<Heading level={2} size="md" id="clima-actual">Clima ahora en {city}</Heading>
+	<WeatherSummary current={report?.current} size="lg" />
+	{
+		report && (
+			<dl class="panel__stats">
+				<StatItem label="Sensación" value={formatTemperature(report.current.apparentTemperature)} />
+				<StatItem label="Humedad" value={`${report.current.humidity}%`} />
+				<StatItem label="Viento" value={`${Math.round(report.current.windSpeed)} km/h`} />
+				{today && <StatItem label="Máx / Mín" value={`${formatTemperature(today.max)} / ${formatTemperature(today.min)}`} />}
+				{today && <StatItem label="Amanecer" value={time(today.sunrise)} />}
+				{today && <StatItem label="Atardecer" value={time(today.sunset)} />}
+			</dl>
+		)
+	}
+</Surface>
+
+<style>
+	.panel {
+		display: grid;
+		gap: var(--space-4);
+		padding: var(--space-5);
+	}
+	.panel__stats {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+		gap: var(--space-2);
+		margin: 0;
+	}
+</style>

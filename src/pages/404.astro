@@ -1,0 +1,46 @@
+---
+import BaseLayout from '@shared/ui/templates/BaseLayout.astro';
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import Button from '@shared/ui/atoms/Button.astro';
+
+Astro.response.status = 404;
+---
+
+<BaseLayout title="Página no encontrada" description="Esta página no existe." noindex>
+	<div class="container not-found">
+		<Surface tone="clay" shadow="lg" class="not-found__box">
+			<p class="not-found__code">404</p>
+			<Heading level={1} size="xl">Te perdiste en el bosque</Heading>
+			<p>No encontramos esta zona horaria. Puede que la dirección esté mal escrita.</p>
+			<div class="not-found__actions">
+				<Button href="/" variant="primary">Ir a mi reloj</Button>
+				<Button href="/zonas" variant="ghost">Ver todas las zonas</Button>
+			</div>
+		</Surface>
+	</div>
+</BaseLayout>
+
+<style>
+	.not-found {
+		padding-block: var(--space-8);
+	}
+	.not-found__box {
+		display: grid;
+		gap: var(--space-3);
+		max-width: 40rem;
+		padding: var(--space-6);
+	}
+	.not-found__code {
+		font-family: var(--font-mono);
+		font-size: var(--fs-display);
+		font-weight: 700;
+		line-height: 1;
+	}
+	.not-found__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin-top: var(--space-3);
+	}
+</style>

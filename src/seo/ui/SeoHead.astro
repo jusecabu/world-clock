@@ -1,0 +1,47 @@
+---
+import JsonLd from './JsonLd.astro';
+import { SITE } from '../domain/site';
+
+export interface SeoProps {
+	title: string;
+	description?: string;
+	/** Ruta canónica; por defecto la ruta actual sin query string. */
+	canonicalPath?: string;
+	noindex?: boolean;
+	ogType?: 'website' | 'article';
+	keywords?: string[];
+	jsonLd?: object[];
+}
+
+type Props = SeoProps;
+
+const { title, description = SITE.description, canonicalPath, noindex = false, ogType = 'website', keywords = [], jsonLd = [] } = Astro.props;
+
+const site = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(canonicalPath ?? Astro.url.pathname, site);
+const fullTitle = title.includes(SITE.name) ? title : `${title} | ${SITE.name}`;
+const allKeywords = [...new Set([...keywords, ...SITE.keywords])].join(', ');
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<meta name="keywords" content={allKeywords} />
+<link rel="canonical" href={canonical.href} />
+<meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+<link rel="alternate" hreflang="es" href={canonical.href} />
+<link rel="alternate" hreflang="x-default" href={canonical.href} />
+
+<!-- Open Graph -->
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content={SITE.locale} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical.href} />
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+
+<JsonLd data={jsonLd} />

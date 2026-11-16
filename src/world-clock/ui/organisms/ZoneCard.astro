@@ -1,0 +1,170 @@
+---
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import LiveTime from '../atoms/LiveTime.astro';
+import ZoneTimeBadges from '../molecules/ZoneTimeBadges.astro';
+import WeatherSummary from '@weather/ui/molecules/WeatherSummary.astro';
+import type { Zone } from '../../domain/zone';
+import type { WeatherReport } from '@weather/domain/weather';
+import { getClockParts, getDayPeriod } from '../../domain/time';
+
+type Props = {
+	zone: Zone;
+	weather: WeatherReport | null;
+	now: Date;
+	localTimeZone?: string;
+	removable?: boolean;
+	headingLevel?: 2 | 3;
+};
+
+const { zone, weather, now, localTimeZone, removable = false, headingLevel = 3 } = Astro.props;
+const period = getDayPeriod(getClockParts(zone.timeZone, now).h);
+---
+
+<Surface as="article" tone="period" class="zone-card" data-period={period} data-period-tz={zone.timeZone} data-zone-card={zone.slug}>
+	<header class="zone-card__head">
+		<div class="zone-card__title">
+			<Heading level={headingLevel} size="md" class="zone-card__city">
+				<a href={`/zona/${zone.slug}`} class="zone-card__link">{zone.city}</a>
+			</Heading>
+			<p class="zone-card__country">{zone.country}</p>
+			<p class="zone-card__tz" title={zone.timeZone}>{zone.timeZone}</p>
+		</div>
+		{
+			removable && (
+				<button type="button" class="zone-card__remove" data-remove-zone={zone.slug} aria-label={`Quitar ${zone.city} de mis zonas`}>
+					×
+				</button>
+			)
+		}
+	</header>
+
+	<div class="zone-card__time">
+		<LiveTime timeZone={zone.timeZone} format="time" now={now} size="lg" class="zone-card__clock" />
+		<LiveTime timeZone={zone.timeZone} format="date-short" now={now} size="sm" class="zone-card__date" />
+	</div>
+
+	<ZoneTimeBadges timeZone={zone.timeZone} now={now} localTimeZone={localTimeZone} />
+
+	<footer class="zone-card__foot">
+		<WeatherSummary current={weather?.current} />
+		<a href={`/zona/${zone.slug}`} class="zone-card__more" aria-label={`Ver detalle de ${zone.city}`}>Detalle →</a>
+	</footer>
+</Surface>
+
+<style>
+	/*
+	 * Filas fijas: cabecera · hora · badges · (espacio flexible) · pie.
+	 * Así todas las tarjetas de una fila alinean sus bloques aunque el contenido cambie,
+	 * y el pie con el clima queda siempre abajo.
+	 */
+	.zone-card {
+		container-type: inline-size;
+		display: grid;
+		grid-template-rows: auto auto auto 1fr;
+		gap: var(--space-4);
+		height: 100%;
+		min-width: 0;
+		padding: var(--space-4);
+		transition:
+			transform 140ms ease,
+			box-shadow 140ms ease,
+			background-color 600ms ease;
+	}
+	.zone-card:hover {
+		transform: translate(-2px, -2px);
+		box-shadow: var(--shadow-lg);
+	}
+
+	.zone-card__head {
+		display: flex;
+		justify-content: space-between;
+		align-items: start;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+	.zone-card__title {
+		display: grid;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+	.zone-card .zone-card__city,
+	.zone-card__country,
+	.zone-card__tz {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.zone-card__link {
+		text-decoration: none;
+	}
+	.zone-card__link:hover {
+		text-decoration: underline;
+		text-decoration-thickness: 3px;
+	}
+	.zone-card__country {
+		font-size: var(--fs-sm);
+		font-weight: 500;
+	}
+	.zone-card__tz {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		color: var(--color-ink-soft);
+	}
+	.zone-card__remove {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		font-size: 1.3rem;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+		background: var(--color-surface);
+		border: 2px solid var(--color-ink);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow-sm);
+	}
+	.zone-card__remove:hover {
+		background: var(--clay-300);
+	}
+	.zone-card__remove:active {
+		transform: translate(2px, 2px);
+		box-shadow: none;
+	}
+
+	.zone-card__time {
+		display: grid;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+	/* El reloj escala con el ancho de la tarjeta (container query) y nunca se corta */
+	.zone-card .zone-card__clock {
+		font-size: clamp(1.8rem, 17cqi, 3.2rem);
+		white-space: nowrap;
+	}
+	.zone-card__date {
+		text-transform: capitalize;
+	}
+
+	.zone-card__foot {
+		align-self: end;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-2);
+		min-width: 0;
+		padding-top: var(--space-3);
+		border-top: 2px dashed hsl(var(--h-ink) var(--s-ink) 11% / 0.35);
+	}
+	.zone-card__foot > :global(:first-child) {
+		min-width: 0;
+	}
+	.zone-card__more {
+		flex: none;
+		font-weight: 700;
+		font-size: var(--fs-sm);
+		white-space: nowrap;
+	}
+</style>

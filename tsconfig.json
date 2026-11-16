@@ -1,5 +1,13 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  "exclude": ["dist"],
+  "compilerOptions": {
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@world-clock/*": ["./src/world-clock/*"],
+      "@weather/*": ["./src/weather/*"],
+      "@seo/*": ["./src/seo/*"]
+    }
+  }
 }

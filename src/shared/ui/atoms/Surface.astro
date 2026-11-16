@@ -1,0 +1,56 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Tone = 'surface' | 'moss' | 'fern' | 'mist' | 'lichen' | 'clay' | 'sage' | 'period';
+type Props = {
+	as?: 'div' | 'section' | 'article' | 'aside' | 'li';
+	tone?: Tone;
+	shadow?: 'sm' | 'md' | 'lg';
+	class?: string;
+} & Omit<HTMLAttributes<'div'>, 'class'>;
+
+const { as: Tag = 'div', tone = 'surface', shadow = 'md', class: className, ...rest } = Astro.props;
+---
+
+<Tag class:list={['surface', `surface--${tone}`, `surface--shadow-${shadow}`, className]} {...rest}><slot /></Tag>
+
+<style>
+	.surface {
+		--surface-bg: var(--color-surface);
+		background: var(--surface-bg);
+		border: var(--border);
+		border-radius: var(--radius);
+		transition: background-color 600ms ease;
+	}
+	.surface--shadow-sm {
+		box-shadow: var(--shadow-sm);
+	}
+	.surface--shadow-md {
+		box-shadow: var(--shadow);
+	}
+	.surface--shadow-lg {
+		box-shadow: var(--shadow-lg);
+	}
+	.surface--moss {
+		--surface-bg: var(--moss-200);
+	}
+	.surface--fern {
+		--surface-bg: var(--fern-200);
+	}
+	.surface--mist {
+		--surface-bg: var(--mist-100);
+	}
+	.surface--lichen {
+		--surface-bg: var(--lichen-200);
+	}
+	.surface--clay {
+		--surface-bg: var(--clay-100);
+	}
+	.surface--sage {
+		--surface-bg: var(--sage-200);
+	}
+	/* Toma el color del momento del día ([data-period] en el propio elemento o un ancestro) */
+	.surface--period {
+		--surface-bg: var(--card-bg, var(--color-surface));
+	}
+</style>

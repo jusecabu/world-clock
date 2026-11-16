@@ -1,0 +1,30 @@
+---
+/**
+ * Componente sin interfaz: arranca el reloj del navegador y sincroniza la zona
+ * horaria del visitante con el servidor (cookie) para el render SSR.
+ */
+---
+
+<script>
+	import { startClocks, refreshClocks } from '../client/clock-ticker';
+	import { syncTimeZoneCookie } from '../client/browser-time-zone';
+
+	startClocks();
+
+	const changed = syncTimeZoneCookie();
+	const hero = document.querySelector<HTMLElement>('[data-local-hero]');
+
+	// Primera visita (o cambio de zona): el servidor aún no conocía tu zona. Pedimos el bloque
+	// de hora local ya renderizado con tu ciudad y su clima, y lo reemplazamos.
+	if (hero && (changed || hero.dataset.known === 'false')) {
+		fetch('/partials/local-hero')
+			.then((res) => (res.ok ? res.text() : Promise.reject()))
+			.then((html) => {
+				hero.outerHTML = html;
+				refreshClocks();
+			})
+			.catch(() => {
+				/* nos quedamos con la hora del navegador */
+			});
+	}
+</script>

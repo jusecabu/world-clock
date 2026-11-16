@@ -1,0 +1,42 @@
+---
+import Surface from '@shared/ui/atoms/Surface.astro';
+import Heading from '@shared/ui/atoms/Heading.astro';
+import ForecastDayItem from '../molecules/ForecastDayItem.astro';
+import type { DailyForecast } from '../../domain/weather';
+
+type Props = { days: DailyForecast[]; city: string };
+const { days, city } = Astro.props;
+const rangeMin = Math.min(...days.map((d) => d.min));
+const rangeMax = Math.max(...days.map((d) => d.max));
+---
+
+{
+	days.length > 0 && (
+		<Surface as="section" tone="surface" class="week" aria-labelledby="pronostico-semana">
+			<Heading level={2} size="md" id="pronostico-semana">
+				Pronóstico de 7 días en {city}
+			</Heading>
+			<ol class="week__list">
+				{days.map((d, i) => (
+					<ForecastDayItem day={d} isToday={i === 0} rangeMin={rangeMin} rangeMax={rangeMax} />
+				))}
+			</ol>
+		</Surface>
+	)
+}
+
+<style>
+	.week {
+		display: grid;
+		gap: var(--space-3);
+		padding: var(--space-5);
+	}
+	.week__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border: 2px solid var(--color-ink);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+	}
+</style>

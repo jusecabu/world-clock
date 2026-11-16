@@ -1,0 +1,48 @@
+---
+import WeatherIcon from '../atoms/WeatherIcon.astro';
+import Temperature from '../atoms/Temperature.astro';
+import { describeWeather, type CurrentWeather } from '../../domain/weather';
+
+type Props = { current: CurrentWeather | null | undefined; size?: 'sm' | 'lg' };
+const { current, size = 'sm' } = Astro.props;
+const condition = current ? describeWeather(current.weatherCode) : null;
+---
+
+{
+	current && condition ? (
+		<div class:list={['summary', `summary--${size}`]}>
+			<WeatherIcon code={current.weatherCode} isDay={current.isDay} size={size === 'lg' ? 84 : 44} />
+			<div class="summary__text">
+				<Temperature value={current.temperature} size={size === 'lg' ? 'xl' : 'md'} />
+				<span class="summary__label">{condition.label}</span>
+			</div>
+		</div>
+	) : (
+		<p class="summary summary--empty">Clima no disponible ahora mismo</p>
+	)
+}
+
+<style>
+	.summary {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	.summary__text {
+		display: grid;
+		gap: var(--space-1);
+	}
+	.summary__label {
+		font-size: var(--fs-sm);
+		font-weight: 500;
+	}
+	.summary--lg .summary__label {
+		font-size: var(--fs-md);
+		font-weight: 700;
+	}
+	.summary--empty {
+		font-size: var(--fs-sm);
+		color: var(--color-ink-soft);
+		font-style: italic;
+	}
+</style>

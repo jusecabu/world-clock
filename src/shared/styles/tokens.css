@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Design tokens — Paleta "bosque neutro pastel" en HSL
+   --------------------------------------------------------------------------
+   Cada familia de color se define con su TONO (h) y SATURACIÓN (s) por
+   separado, y los niveles comparten una escala de LUMINOSIDAD (l).
+   Así puedes:
+     - mover toda una familia cambiando solo su --h-*
+     - apagar/avivar la paleta cambiando --s-*
+     - crear niveles nuevos con hsl(var(--h-moss) var(--s-moss) 60%)
+     - aplicar transparencia con hsl(var(--h-moss) var(--s-moss) 50% / .4)
+   ========================================================================== */
+
+:root {
+	/* ---- Tonos (hue) ------------------------------------------------------ */
+	--h-moss: 88; /* musgo */
+	--h-sage: 128; /* salvia */
+	--h-fern: 158; /* helecho */
+	--h-mist: 192; /* niebla de río */
+	--h-lichen: 50; /* liquen / luz de claro */
+	--h-bark: 28; /* corteza */
+	--h-clay: 12; /* arcilla / hongo */
+	--h-ink: 150; /* tinta: verde casi negro */
+
+	/* ---- Saturaciones (pastel = baja/media) ------------------------------- */
+	--s-moss: 30%;
+	--s-sage: 22%;
+	--s-fern: 26%;
+	--s-mist: 30%;
+	--s-lichen: 58%;
+	--s-bark: 28%;
+	--s-clay: 48%;
+	--s-ink: 24%;
+
+	/* ---- Escala de luminosidad compartida --------------------------------- */
+	--l-50: 97%;
+	--l-100: 93%;
+	--l-200: 86%;
+	--l-300: 77%;
+	--l-400: 66%;
+	--l-500: 54%;
+	--l-700: 34%;
+	--l-900: 15%;
+
+	/* ---- Niveles por familia ---------------------------------------------- */
+	--moss-50: hsl(var(--h-moss) var(--s-moss) var(--l-50));
+	--moss-100: hsl(var(--h-moss) var(--s-moss) var(--l-100));
+	--moss-200: hsl(var(--h-moss) var(--s-moss) var(--l-200));
+	--moss-300: hsl(var(--h-moss) var(--s-moss) var(--l-300));
+	--moss-400: hsl(var(--h-moss) var(--s-moss) var(--l-400));
+	--moss-500: hsl(var(--h-moss) var(--s-moss) var(--l-500));
+	--moss-700: hsl(var(--h-moss) var(--s-moss) var(--l-700));
+	--moss-900: hsl(var(--h-moss) var(--s-moss) var(--l-900));
+
+	--sage-50: hsl(var(--h-sage) var(--s-sage) var(--l-50));
+	--sage-100: hsl(var(--h-sage) var(--s-sage) var(--l-100));
+	--sage-200: hsl(var(--h-sage) var(--s-sage) var(--l-200));
+	--sage-300: hsl(var(--h-sage) var(--s-sage) var(--l-300));
+	--sage-400: hsl(var(--h-sage) var(--s-sage) var(--l-400));
+	--sage-500: hsl(var(--h-sage) var(--s-sage) var(--l-500));
+	--sage-700: hsl(var(--h-sage) var(--s-sage) var(--l-700));
+	--sage-900: hsl(var(--h-sage) var(--s-sage) var(--l-900));
+
+	--fern-50: hsl(var(--h-fern) var(--s-fern) var(--l-50));
+	--fern-100: hsl(var(--h-fern) var(--s-fern) var(--l-100));
+	--fern-200: hsl(var(--h-fern) var(--s-fern) var(--l-200));
+	--fern-300: hsl(var(--h-fern) var(--s-fern) var(--l-300));
+	--fern-400: hsl(var(--h-fern) var(--s-fern) var(--l-400));
+	--fern-500: hsl(var(--h-fern) var(--s-fern) var(--l-500));
+	--fern-700: hsl(var(--h-fern) var(--s-fern) var(--l-700));
+	--fern-900: hsl(var(--h-fern) var(--s-fern) var(--l-900));
+
+	--mist-50: hsl(var(--h-mist) var(--s-mist) var(--l-50));
+	--mist-100: hsl(var(--h-mist) var(--s-mist) var(--l-100));
+	--mist-200: hsl(var(--h-mist) var(--s-mist) var(--l-200));
+	--mist-300: hsl(var(--h-mist) var(--s-mist) var(--l-300));
+	--mist-400: hsl(var(--h-mist) var(--s-mist) var(--l-400));
+	--mist-500: hsl(var(--h-mist) var(--s-mist) var(--l-500));
+	--mist-700: hsl(var(--h-mist) var(--s-mist) var(--l-700));
+	--mist-900: hsl(var(--h-mist) var(--s-mist) var(--l-900));
+
+	--lichen-50: hsl(var(--h-lichen) var(--s-lichen) var(--l-50));
+	--lichen-100: hsl(var(--h-lichen) var(--s-lichen) var(--l-100));
+	--lichen-200: hsl(var(--h-lichen) var(--s-lichen) var(--l-200));
+	--lichen-300: hsl(var(--h-lichen) var(--s-lichen) var(--l-300));
+	--lichen-400: hsl(var(--h-lichen) var(--s-lichen) var(--l-400));
+	--lichen-500: hsl(var(--h-lichen) var(--s-lichen) var(--l-500));
+	--lichen-700: hsl(var(--h-lichen) var(--s-lichen) var(--l-700));
+	--lichen-900: hsl(var(--h-lichen) var(--s-lichen) var(--l-900));
+
+	--bark-50: hsl(var(--h-bark) var(--s-bark) var(--l-50));
+	--bark-100: hsl(var(--h-bark) var(--s-bark) var(--l-100));
+	--bark-200: hsl(var(--h-bark) var(--s-bark) var(--l-200));
+	--bark-300: hsl(var(--h-bark) var(--s-bark) var(--l-300));
+	--bark-400: hsl(var(--h-bark) var(--s-bark) var(--l-400));
+	--bark-500: hsl(var(--h-bark) var(--s-bark) var(--l-500));
+	--bark-700: hsl(var(--h-bark) var(--s-bark) var(--l-700));
+	--bark-900: hsl(var(--h-bark) var(--s-bark) var(--l-900));
+
+	--clay-50: hsl(var(--h-clay) var(--s-clay) var(--l-50));
+	--clay-100: hsl(var(--h-clay) var(--s-clay) var(--l-100));
+	--clay-200: hsl(var(--h-clay) var(--s-clay) var(--l-200));
+	--clay-300: hsl(var(--h-clay) var(--s-clay) var(--l-300));
+	--clay-400: hsl(var(--h-clay) var(--s-clay) var(--l-400));
+	--clay-500: hsl(var(--h-clay) var(--s-clay) var(--l-500));
+	--clay-700: hsl(var(--h-clay) var(--s-clay) var(--l-700));
+	--clay-900: hsl(var(--h-clay) var(--s-clay) var(--l-900));
+
+	--ink-500: hsl(var(--h-ink) var(--s-ink) 30%);
+	--ink-700: hsl(var(--h-ink) var(--s-ink) 20%);
+	--ink-900: hsl(var(--h-ink) var(--s-ink) 11%);
+
+	/* ---- Tokens semánticos ------------------------------------------------ */
+	--color-bg: hsl(var(--h-lichen) 38% 93%);
+	--color-bg-pattern: hsl(var(--h-moss) var(--s-moss) var(--l-300) / 0.35);
+	--color-surface: var(--moss-50);
+	--color-ink: var(--ink-900);
+	--color-ink-soft: var(--ink-500);
+	--color-primary: var(--fern-300);
+	--color-primary-strong: var(--fern-400);
+	--color-accent: var(--clay-300);
+	--color-highlight: var(--lichen-300);
+	--color-focus: var(--clay-500);
+
+	/* Colores por momento del día (se aplican a tarjetas según la hora local de la zona) */
+	--period-dawn: var(--mist-200); /* madrugada */
+	--period-morning: var(--lichen-200); /* mañana */
+	--period-afternoon: var(--clay-200); /* tarde */
+	--period-night: var(--sage-300); /* noche */
+
+	/* ---- Neobrutalismo ---------------------------------------------------- */
+	--border-w: 3px;
+	--border: var(--border-w) solid var(--color-ink);
+	--radius: 10px;
+	--radius-sm: 6px;
+	--shadow-offset: 6px;
+	--shadow: var(--shadow-offset) var(--shadow-offset) 0 0 var(--color-ink);
+	--shadow-sm: 3px 3px 0 0 var(--color-ink);
+	--shadow-lg: 10px 10px 0 0 var(--color-ink);
+
+	/* ---- Tipografía ------------------------------------------------------- */
+	/* Las variables --font-space-* las genera la Fonts API de Astro (ver astro.config.mjs) */
+	/* (ya incluyen los fallbacks ajustados que define la config) */
+	--font-sans: var(--font-space-grotesk);
+	--font-mono: var(--font-space-mono);
+	--fs-xs: 0.8rem;
+	--fs-sm: 0.92rem;
+	--fs-md: 1.05rem;
+	--fs-lg: 1.35rem;
+	--fs-xl: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem);
+	--fs-2xl: clamp(2.2rem, 1.4rem + 3.2vw, 3.6rem);
+	--fs-display: clamp(3.2rem, 1.6rem + 7vw, 7rem);
+
+	/* ---- Espaciado -------------------------------------------------------- */
+	--space-1: 0.25rem;
+	--space-2: 0.5rem;
+	--space-3: 0.75rem;
+	--space-4: 1rem;
+	--space-5: 1.5rem;
+	--space-6: 2rem;
+	--space-7: 3rem;
+	--space-8: 4.5rem;
+
+	--container: 1180px;
+}

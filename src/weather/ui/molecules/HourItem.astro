@@ -1,0 +1,38 @@
+---
+import WeatherIcon from '../atoms/WeatherIcon.astro';
+import Temperature from '../atoms/Temperature.astro';
+import type { HourlyForecast } from '../../domain/weather';
+
+type Props = { hour: HourlyForecast; isNow?: boolean };
+const { hour, isNow = false } = Astro.props;
+const label = isNow ? 'Ahora' : hour.time.slice(11, 16);
+---
+
+<li class:list={['hour', { 'hour--now': isNow }]}>
+	<span class="hour__time">{label}</span>
+	<WeatherIcon code={hour.weatherCode} isDay={hour.isDay} size={34} />
+	<Temperature value={hour.temperature} size="sm" />
+</li>
+
+<style>
+	.hour {
+		display: grid;
+		justify-items: center;
+		gap: var(--space-1);
+		min-width: 4.2rem;
+		padding: var(--space-2);
+		background: var(--color-surface);
+		border: 2px solid var(--color-ink);
+		border-radius: var(--radius-sm);
+		scroll-snap-align: start;
+	}
+	.hour--now {
+		background: var(--color-highlight);
+		box-shadow: var(--shadow-sm);
+	}
+	.hour__time {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 700;
+	}
+</style>

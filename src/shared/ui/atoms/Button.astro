@@ -1,0 +1,89 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Variant = 'primary' | 'accent' | 'highlight' | 'ghost';
+type Size = 'sm' | 'md' | 'lg';
+
+type Props = {
+	variant?: Variant;
+	size?: Size;
+	href?: string;
+	class?: string;
+} & Omit<HTMLAttributes<'button'>, 'class'> &
+	Omit<HTMLAttributes<'a'>, 'class' | 'type'>;
+
+const { variant = 'primary', size = 'md', href, class: className, type = 'button', ...rest } = Astro.props;
+const classes = ['btn', `btn--${variant}`, `btn--${size}`, className];
+---
+
+{
+	href ? (
+		<a href={href} class:list={classes} {...rest}>
+			<slot />
+		</a>
+	) : (
+		<button type={type} class:list={classes} {...rest}>
+			<slot />
+		</button>
+	)
+}
+
+<style>
+	.btn {
+		--btn-bg: var(--color-primary);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		font-weight: 700;
+		text-decoration: none;
+		letter-spacing: 0.01em;
+		cursor: pointer;
+		background: var(--btn-bg);
+		color: var(--color-ink);
+		border: var(--border);
+		border-radius: var(--radius-sm);
+		box-shadow: var(--shadow-sm);
+		transition:
+			transform 120ms ease,
+			box-shadow 120ms ease,
+			background-color 120ms ease;
+		white-space: nowrap;
+	}
+	.btn:hover {
+		transform: translate(-2px, -2px);
+		box-shadow: 5px 5px 0 0 var(--color-ink);
+	}
+	.btn:active {
+		transform: translate(3px, 3px);
+		box-shadow: 0 0 0 0 var(--color-ink);
+	}
+	.btn[aria-pressed='true'] {
+		--btn-bg: var(--color-highlight);
+	}
+
+	.btn--primary {
+		--btn-bg: var(--color-primary);
+	}
+	.btn--accent {
+		--btn-bg: var(--color-accent);
+	}
+	.btn--highlight {
+		--btn-bg: var(--color-highlight);
+	}
+	.btn--ghost {
+		--btn-bg: var(--color-surface);
+	}
+
+	.btn--sm {
+		padding: var(--space-1) var(--space-2);
+		font-size: var(--fs-sm);
+	}
+	.btn--md {
+		padding: var(--space-2) var(--space-4);
+	}
+	.btn--lg {
+		padding: var(--space-3) var(--space-5);
+		font-size: var(--fs-lg);
+	}
+</style>
