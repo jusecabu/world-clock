@@ -32,6 +32,10 @@ COPY . .
 ARG SITE_URL
 ENV SITE_URL=${SITE_URL}
 ENV ASTRO_TELEMETRY_DISABLED=1
+# Sin SITE_URL el sitemap y las URLs canónicas apuntarían a localhost: mejor fallar.
+RUN if [ -z "$SITE_URL" ]; then \
+      echo "ERROR: falta el build arg SITE_URL (en Dokploy: Environment → Build-time Arguments)"; exit 1; \
+    fi
 RUN pnpm build
 
 # ---- Runtime -----------------------------------------------------------------

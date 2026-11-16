@@ -25,7 +25,7 @@ El workflow [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml)
 
 1. Crea un proyecto y una **Application** con proveedor GitHub apuntando a este repo, rama `main`.
 2. **Build Type** → `Dockerfile` (ruta `Dockerfile`, contexto `.`).
-3. **Environment → Build Time Arguments**: `SITE_URL=https://tudominio.com`.
+3. **Environment → Build-time Arguments** (no en "Environment Settings", que es para variables de ejecución): `SITE_URL=https://tudominio.com`. Este campo aparece al tener Build Type = Dockerfile guardado. Si falta, el build de Docker falla a propósito.
 4. **Domains**: añade tu dominio con puerto de contenedor `4321` y HTTPS.
 5. **General → Auto Deploy**: **desactívalo**. Si no, cada push despliega dos veces (webhook + Actions) y además se desplegaría aunque el CI falle.
 6. **Settings → Profile → API/CLI Keys** → *Generate New Key* (un admin debe darte permiso de API).
