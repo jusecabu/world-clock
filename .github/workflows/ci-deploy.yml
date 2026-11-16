@@ -1,0 +1,97 @@
+name: CI y deploy a Dokploy
+
+# - Pull requests: verifica tipos, compila Astro y construye la imagen Docker.
+# - Push a main: lo mismo y, si todo pasa, pide a Dokploy que despliegue.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Tipos y build de Astro
+    runs-on: ubuntu-latest
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Toma la versión de pnpm del campo "packageManager" de package.json
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm build
+
+  docker:
+    name: Build de la imagen Docker
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Solo comprueba que la imagen construye; quien la construye y ejecuta en producción es Dokploy.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          build-args: SITE_URL=${{ vars.SITE_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy en Dokploy
+    runs-on: ubuntu-latest
+    needs: [check, docker]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ vars.SITE_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    steps:
+      - name: Disparar deploy
+        env:
+          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+          DOKPLOY_APPLICATION_ID: ${{ secrets.DOKPLOY_APPLICATION_ID }}
+        run: |
+          set -euo pipefail
+          for name in DOKPLOY_URL DOKPLOY_API_KEY DOKPLOY_APPLICATION_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Falta el secret $name en Settings → Secrets and variables → Actions"
+              exit 1
+            fi
+          done
+
+          status=$(curl --silent --show-error --output response.json --write-out '%{http_code}' \
+            --max-time 60 \
+            -X POST "${DOKPLOY_URL%/}/api/application.deploy" \
+            -H 'accept: application/json' \
+            -H 'Content-Type: application/json' \
+            -H "x-api-key: ${DOKPLOY_API_KEY}" \
+            -d "{\"applicationId\": \"${DOKPLOY_APPLICATION_ID}\"}")
+
+          echo "Dokploy respondió HTTP $status"
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            cat response.json
+            echo "::error::Dokploy rechazó el deploy (HTTP $status)"
+            exit 1
+          fi
+          echo "Deploy encolado en Dokploy. Sigue el progreso en la pestaña Deployments de la aplicación."

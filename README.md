@@ -13,6 +13,42 @@ App SSR con Astro + `@astrojs/node` que muestra tu hora local, las zonas horaria
 
 En producción define `SITE_URL` (p. ej. `SITE_URL=https://tudominio.com pnpm build`) para que canonical, Open Graph y el sitemap usen tu dominio.
 
+## Deploy con Dokploy + GitHub Actions
+
+El workflow [`.github/workflows/ci-deploy.yml`](.github/workflows/ci-deploy.yml) hace:
+
+1. **check**: `pnpm check` + `pnpm build` (en PRs y en `main`).
+2. **docker**: construye la imagen del `Dockerfile` para validar que compila (no la publica).
+3. **deploy** (solo push a `main`): llama a `POST {DOKPLOY_URL}/api/application.deploy` y Dokploy construye y despliega.
+
+### 1. En Dokploy
+
+1. Crea un proyecto y una **Application** con proveedor GitHub apuntando a este repo, rama `main`.
+2. **Build Type** → `Dockerfile` (ruta `Dockerfile`, contexto `.`).
+3. **Environment → Build Time Arguments**: `SITE_URL=https://tudominio.com`.
+4. **Domains**: añade tu dominio con puerto de contenedor `4321` y HTTPS.
+5. **General → Auto Deploy**: **desactívalo**. Si no, cada push despliega dos veces (webhook + Actions) y además se desplegaría aunque el CI falle.
+6. **Settings → Profile → API/CLI Keys** → *Generate New Key* (un admin debe darte permiso de API).
+7. Obtén el `applicationId` con `GET {DOKPLOY_URL}/api/project.all` (cabecera `x-api-key`) o desde Swagger en `{DOKPLOY_URL}/swagger`.
+
+### 2. En GitHub (Settings → Secrets and variables → Actions)
+
+| Tipo     | Nombre                   | Valor                                    |
+| -------- | ------------------------ | ---------------------------------------- |
+| Secret   | `DOKPLOY_URL`            | `https://dokploy.tudominio.com`          |
+| Secret   | `DOKPLOY_API_KEY`        | La API key generada                      |
+| Secret   | `DOKPLOY_APPLICATION_ID` | El id de la aplicación                   |
+| Variable | `SITE_URL`               | `https://tudominio.com`                  |
+
+Opcional: crea el environment `production` (Settings → Environments) para exigir aprobación manual antes de desplegar.
+
+### Probar la imagen en local
+
+```bash
+docker build --build-arg SITE_URL=http://localhost:4321 -t raiz-horaria .
+docker run --rm -p 4321:4321 raiz-horaria
+```
+
 ## Arquitectura (screaming + atomic design)
 
 La carpeta `src/` "grita" lo que hace la app: cada feature tiene su dominio, infraestructura y UI atómica.
